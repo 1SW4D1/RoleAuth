@@ -14,6 +14,7 @@ import kr.foundcake.role_auth.extension.slash
 import kr.foundcake.role_auth.handler.CommandHandler
 import kr.foundcake.role_auth.handler.handleAuthButton
 import kr.foundcake.role_auth.handler.handleAuthModal
+import kr.foundcake.role_auth.handler.handleMessage
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Role
@@ -24,13 +25,14 @@ fun main() = runBlocking {
 
 	val token: String = System.getenv("TOKEN")
 	val jda: JDA = default(token, true) {
-		intents += GatewayIntent.GUILD_MEMBERS
+		intents += listOf(GatewayIntent.GUILD_MEMBERS, GatewayIntent.MESSAGE_CONTENT)
 	}
 
 	setupCommand(jda)
 
 	handleAuthButton(jda)
 	handleAuthModal(jda)
+	handleMessage(jda)
 
 	dbSetup.await()
 
