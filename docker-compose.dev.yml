@@ -1,0 +1,28 @@
+version: "3.0"
+
+services:
+  mysql:
+    container_name: mysql
+    image: mysql:latest
+    restart: unless-stopped
+    environment:
+      - TZ=Asia/Seoul
+      - MYSQL_ROOT_PASSWORD=${DB_PASSWORD}
+      - MYSQL_DATABASE=${DB_NAME}
+    ports:
+      - "3306:3306"
+
+  bot:
+    container_name: DiscordBot
+    image: eclipse-temurin:21-jre
+    working_dir: /app
+    volumes:
+      - ./build/libs:/app
+    environment:
+      - TZ=Asia/Seoul
+      - DB_PASSWORD=${DB_PASSWORD}
+      - DB_NAME=${DB_NAME}
+      - TOKEN=${TOKEN}
+    command: [ "java", "-jar", "RoleAuth.jar" ]
+    depends_on:
+      - mysql
