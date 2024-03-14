@@ -18,6 +18,10 @@ import java.io.FileInputStream
 import java.io.InputStreamReader
 import java.nio.charset.StandardCharsets
 
+private const val FILE_EXTENSION = "CSV"
+private const val MESSAGE_COMMAND = "<유저전체추가>"
+private const val MESSAGE_COMMAND_OF_SYNC = "$MESSAGE_COMMAND(동기화)"
+
 fun handleMessage(jda: JDA) {
 	jda.listener<MessageReceivedEvent> {
 		if(it.member?.hasPermission(Permission.MANAGE_ROLES) != true) {
@@ -27,11 +31,11 @@ fun handleMessage(jda: JDA) {
 		val message = it.message
 		val content = message.contentRaw
 
-		if (message.attachments.count() != 1 || (content != "<유저전체추가>" && content != "<유저전체추가>(동기화)")) {
+		if (message.attachments.count() != 1 || (content != MESSAGE_COMMAND && content != MESSAGE_COMMAND_OF_SYNC)) {
 			return@listener
 		}
 		val attachment = message.attachments[0]
-		if (attachment.fileExtension != "csv") {
+		if (attachment.fileExtension != FILE_EXTENSION) {
 			return@listener
 		}
 
@@ -63,8 +67,8 @@ fun handleMessage(jda: JDA) {
 							)
 						)
 						if (result === SaveResult.FAILED) {
-							message.reply("이미 등록되어있습니다.($number 등록 실패)").queue()
-						} else if(content == "<유저전체추가>(동기화)"){
+							message.reply("이미 존재하는 데이터와 일치 하지 않습니다.($number 등록 실패)").queue()
+						} else if (content == MESSAGE_COMMAND_OF_SYNC) {
 							val members: List<Member> = it.guild.loadMembers().await()
 							for (m: Member in members) {
 								if (m.nickname == result.getUser()!!.nickName) {
