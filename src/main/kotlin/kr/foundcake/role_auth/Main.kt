@@ -43,11 +43,12 @@ fun main() = runBlocking {
 
 fun setupCommand(jda: JDA) {
 	jda.updateCommands {
-		slash(Commands.ADD_USER) {
+		slash(Commands.SETUP_USER) {
 			restrict(true, Permission.MANAGE_ROLES)
 			option<Int>("학번", "학번", true)
 			option<String>("이름", "이름", true)
 			option<Role>("역할", "지급할 역할", true)
+			option<Boolean>("동기화", "유저가 서버에 있을 경우 동기화를 시도합니다.")
 		}
 		slash(Commands.REMOVE_USER) {
 			restrict(true, Permission.KICK_MEMBERS)

@@ -19,12 +19,13 @@ class CommandHandler(private val jda: JDA) {
 	private val logger: Logger = LoggerFactory.getLogger(CommandHandler::class.java)
 
 	fun registerAddUser() {
-		jda.onCommand(Commands.ADD_USER) {
+		jda.onCommand(Commands.SETUP_USER) {
 			val number: Int = it.getOption("학번")!!.asInt
 			val name: String = it.getOption("이름")!!.asString
 			val role: Role = it.getOption("역할")!!.asRole
 
-			val result: SaveStatus = DBManager.UserRepo.save(User(number, name, role.idLong))
+			val user = User(number, name, role.idLong)
+			val result: SaveStatus = DBManager.UserRepo.save(user)
 
 			when (result) {
 				SaveStatus.INSERT -> it.reply(
@@ -51,6 +52,17 @@ class CommandHandler(private val jda: JDA) {
 					"${number.josa("은", "는")} 이미 설정되어있습니다.\n" +
 							"기존 이름과 일치하던가 삭제 후 다시 시도해주세요"
 				).queue()
+			}
+
+			val isSync: Boolean = it.getOption("동기화")?.asBoolean == true
+			if(result === SaveStatus.UPDATE && isSync) {
+				val members = it.guild!!.loadMembers().await()
+				for (m in members) {
+					if (m.nickname == user.nickName) {
+						it.guild!!.modifyMemberRoles(m, role).queue()
+						break
+					}
+				}
 			}
 		}
 	}
