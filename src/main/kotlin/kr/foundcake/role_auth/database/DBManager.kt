@@ -1,10 +1,11 @@
 package kr.foundcake.role_auth.database
 
 import com.mysql.cj.jdbc.Driver
-import kr.foundcake.role_auth.dto.User
+import kr.foundcake.role_auth.dto.UserDto
+import kr.foundcake.role_auth.entity.User
 import kr.foundcake.role_auth.table.Users
-import org.jetbrains.exposed.sql.*
-import org.jetbrains.exposed.sql.SqlExpressionBuilder.eq
+import org.jetbrains.exposed.sql.Database
+import org.jetbrains.exposed.sql.SchemaUtils
 import org.jetbrains.exposed.sql.transactions.experimental.newSuspendedTransaction
 import org.jetbrains.exposed.sql.transactions.transaction
 import org.slf4j.LoggerFactory
@@ -34,59 +35,48 @@ object DBManager {
 
 	object UserRepo {
 
-		suspend fun find(number: Int): User? {
+		suspend fun find(serverId: Long, number: Int): User? {
 			var user: User? = null
 			newSuspendedTransaction {
-				val result: ResultRow? = Users.selectAll().where {
+				user = User.find {
+					Users.serverId eq serverId
 					Users.number eq number
 				}.limit(1).singleOrNull()
-				if (result !== null) {
-					user = User(
-						number = result[Users.number],
-						name = result[Users.name],
-						role = result[Users.role]
-					)
-				}
 			}
 			return user
 		}
 
-		suspend fun find(number: Int, name: String): User? {
+		suspend fun find(serverId: Long, number: Int, name: String): User? {
 			var user: User? = null
 			newSuspendedTransaction {
-				val result: ResultRow? = Users.selectAll().where {
+				user = User.find {
+					Users.serverId eq serverId
 					Users.number eq number
 					Users.name eq name
 				}.limit(1).singleOrNull()
-				if (result !== null) {
-					user = User(
-						number = result[Users.number],
-						name = result[Users.name],
-						role = result[Users.role]
-					)
-				}
 			}
 			return user
 		}
 
-		suspend fun save(user: User): SaveStatus {
-			var result = SaveStatus.FAILED
+		suspend fun save(dto: UserDto): SaveResult {
+			var result = SaveResult.FAILED
 			newSuspendedTransaction {
-				val row: ResultRow? = Users.selectAll().where {
-					Users.number eq user.number
+				var user: User? = User.find {
+					Users.serverId eq dto.serverId
+					Users.number eq dto.number
+					Users.name eq dto.name
 				}.limit(1).singleOrNull()
-				if (row === null) {
-					Users.insert {
-						it[number] = user.number
-						it[name] = user.name
-						it[role] = user.role
+				if (user === null) {
+					user = User.new {
+						serverId = dto.serverId
+						number = dto.number
+						name = dto.name
+						role = dto.role
 					}
-					result = SaveStatus.INSERT
-				} else if (row[Users.name] == user.name) {
-					Users.update({ Users.number eq user.number }) {
-						it[role] = user.role
-					}
-					result = SaveStatus.UPDATE
+					result = SaveResult.INSERT.setUser(user)
+				} else if (user.name == dto.name) {
+					user.role = dto.role
+					result = SaveResult.UPDATE.setUser(user)
 				}
 			}
 			return result
@@ -94,9 +84,7 @@ object DBManager {
 
 		suspend fun delete(user: User) {
 			newSuspendedTransaction {
-				Users.deleteWhere {
-					number eq user.number
-				}
+				user.delete()
 			}
 		}
 	}

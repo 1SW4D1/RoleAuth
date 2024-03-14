@@ -3,7 +3,7 @@ package kr.foundcake.role_auth.handler
 import dev.minn.jda.ktx.coroutines.await
 import dev.minn.jda.ktx.events.listener
 import kr.foundcake.role_auth.database.DBManager
-import kr.foundcake.role_auth.dto.User
+import kr.foundcake.role_auth.entity.User
 import kr.foundcake.role_auth.extension.getValue
 import kr.foundcake.role_auth.identifiers.Identifiers
 import net.dv8tion.jda.api.JDA
@@ -24,7 +24,7 @@ fun handleAuthModal(jda: JDA) {
 		}
 		val name: String = it.getValue(Identifiers.AUTH_MODAL_INPUT_NAME).asString
 
-		val user: User? = DBManager.UserRepo.find(number, name)
+		val user: User? = DBManager.UserRepo.find(it.guild!!.idLong, number, name)
 		if (user === null) {
 			it.reply("학번 또는 이름이 잘못되었습니다.")
 				.setEphemeral(true)

@@ -1,8 +1,8 @@
 package kr.foundcake.role_auth.table
 
-import org.jetbrains.exposed.sql.Table
+import org.jetbrains.exposed.dao.id.LongIdTable
 
-object Users : Table("users") {
+object Users : LongIdTable("users") {
 
 	val number = integer("number")
 
@@ -10,5 +10,5 @@ object Users : Table("users") {
 
 	val role = long("roleId")
 
-	override val primaryKey = PrimaryKey(number)
+	val serverId = long("serverId")
 }

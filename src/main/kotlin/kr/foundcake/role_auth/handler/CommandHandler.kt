@@ -3,8 +3,9 @@ package kr.foundcake.role_auth.handler
 import dev.minn.jda.ktx.coroutines.await
 import kr.foundcake.role_auth.command.Commands
 import kr.foundcake.role_auth.database.DBManager
-import kr.foundcake.role_auth.database.SaveStatus
-import kr.foundcake.role_auth.dto.User
+import kr.foundcake.role_auth.database.SaveResult
+import kr.foundcake.role_auth.dto.UserDto
+import kr.foundcake.role_auth.entity.User
 import kr.foundcake.role_auth.extension.josa
 import kr.foundcake.role_auth.extension.onCommand
 import kr.foundcake.role_auth.identifiers.Identifiers
@@ -24,11 +25,17 @@ class CommandHandler(private val jda: JDA) {
 			val name: String = it.getOption("이름")!!.asString
 			val role: Role = it.getOption("역할")!!.asRole
 
-			val user = User(number, name, role.idLong)
-			val result: SaveStatus = DBManager.UserRepo.save(user)
+			val result: SaveResult = DBManager.UserRepo.save(
+				UserDto(
+					serverId = it.guild!!.idLong,
+					number = number,
+					name = name,
+					role = role.idLong
+				)
+			)
 
 			when (result) {
-				SaveStatus.INSERT -> it.reply(
+				SaveResult.INSERT -> it.reply(
 					"${number.josa("은", "는")} ${
 						role.asMention.josa(
 							role.name,
@@ -38,7 +45,7 @@ class CommandHandler(private val jda: JDA) {
 					} 부여되도록 설정하였습니다."
 				).queue()
 
-				SaveStatus.UPDATE -> it.reply(
+				SaveResult.UPDATE -> it.reply(
 					"${number.josa("은", "는")} ${
 						role.asMention.josa(
 							role.name,
@@ -48,17 +55,17 @@ class CommandHandler(private val jda: JDA) {
 					} 부여되도록 변경하였습니다."
 				).queue()
 
-				SaveStatus.FAILED -> it.reply(
+				SaveResult.FAILED -> it.reply(
 					"${number.josa("은", "는")} 이미 설정되어있습니다.\n" +
 							"기존 이름과 일치하던가 삭제 후 다시 시도해주세요"
 				).queue()
 			}
 
 			val isSync: Boolean = it.getOption("동기화")?.asBoolean == true
-			if(result === SaveStatus.UPDATE && isSync) {
+			if (result === SaveResult.UPDATE && isSync) {
 				val members = it.guild!!.loadMembers().await()
 				for (m in members) {
-					if (m.nickname == user.nickName) {
+					if (m.nickname == result.getUser()!!.nickName) {
 						it.guild!!.modifyMemberRoles(m, role).queue()
 						break
 					}
@@ -72,7 +79,7 @@ class CommandHandler(private val jda: JDA) {
 			val number: Int = it.getOption("학번")!!.asInt
 			val name: String = it.getOption("이름")!!.asString
 
-			val user: User? = DBManager.UserRepo.find(number)
+			val user: User? = DBManager.UserRepo.find(it.guild!!.idLong, number)
 			if (user === null) {
 				it.reply("등록되지 않은 유저 입니다.")
 					.setEphemeral(true)
@@ -85,9 +92,10 @@ class CommandHandler(private val jda: JDA) {
 				return@onCommand
 			}
 
-			var comment = "(킥 실패)"
+			var comment = ""
 			val isKick: Boolean = it.getOption("킥여부")?.asBoolean == true
 			if (isKick) {
+				comment = "(킥 실패)"
 				val members = it.guild!!.loadMembers().await()
 				for (m in members) {
 					println(m.nickname)
@@ -101,7 +109,7 @@ class CommandHandler(private val jda: JDA) {
 
 			DBManager.UserRepo.delete(user)
 			it.reply("삭제 되었습니다${comment}").queue()
-			logger.info("remove $user")
+			logger.info("remove ${user.number} from ${user.serverId}")
 		}
 	}
 

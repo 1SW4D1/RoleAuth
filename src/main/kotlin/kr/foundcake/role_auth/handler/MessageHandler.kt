@@ -3,8 +3,8 @@ package kr.foundcake.role_auth.handler
 import dev.minn.jda.ktx.events.listener
 import kotlinx.coroutines.runBlocking
 import kr.foundcake.role_auth.database.DBManager
-import kr.foundcake.role_auth.database.SaveStatus
-import kr.foundcake.role_auth.dto.User
+import kr.foundcake.role_auth.database.SaveResult
+import kr.foundcake.role_auth.dto.UserDto
 import kr.foundcake.role_auth.extension.josa
 import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
@@ -51,10 +51,16 @@ fun handleMessage(jda: JDA) {
 						return@forEach
 					}
 
-					val user = User(num, name, role.idLong)
 					runBlocking {
-						val result: SaveStatus = DBManager.UserRepo.save(user)
-						if(result === SaveStatus.FAILED) {
+						val result: SaveResult = DBManager.UserRepo.save(
+							UserDto(
+								serverId = it.guild.idLong,
+								number = num,
+								name = name,
+								role = role.idLong
+							)
+						)
+						if (result === SaveResult.FAILED) {
 							message.reply("이미 등록되어있습니다.($number 등록 실패)").queue()
 						}
 					}
