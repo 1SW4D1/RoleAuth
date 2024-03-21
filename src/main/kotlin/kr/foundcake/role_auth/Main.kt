@@ -10,6 +10,7 @@ import kotlinx.coroutines.async
 import kotlinx.coroutines.runBlocking
 import kr.foundcake.role_auth.command.Commands
 import kr.foundcake.role_auth.database.DBManager
+import kr.foundcake.role_auth.extension.listener
 import kr.foundcake.role_auth.extension.slash
 import kr.foundcake.role_auth.handler.CommandHandler
 import kr.foundcake.role_auth.handler.handleAuthButton
@@ -19,6 +20,7 @@ import net.dv8tion.jda.api.JDA
 import net.dv8tion.jda.api.Permission
 import net.dv8tion.jda.api.entities.Role
 import net.dv8tion.jda.api.requests.GatewayIntent
+import kotlin.time.Duration.Companion.seconds
 
 fun main() = runBlocking {
 	val dbSetup: Deferred<Unit> = async { DBManager.init() }
@@ -30,9 +32,9 @@ fun main() = runBlocking {
 
 	setupCommand(jda)
 
-	handleAuthButton(jda)
-	handleAuthModal(jda)
-	handleMessage(jda)
+	jda.listener(::handleAuthButton)
+	jda.listener(::handleAuthModal)
+	jda.listener(30.seconds, ::handleMessage)
 
 	dbSetup.await()
 
